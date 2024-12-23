@@ -1,91 +1,155 @@
- {/* Componentes MUI */}
+import React, { useState } from "react";
+import Paper from "@mui/material/Paper";
+import Typography from "@mui/material/Typography";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import { Grid } from "@mui/material";
 
- import Paper from '@mui/material/Paper';
- import Typography from '@mui/material/Typography';
- import Box from '@mui/material/Box';
- import InputLabel from '@mui/material/InputLabel';
- import MenuItem from '@mui/material/MenuItem';
- import FormControl from '@mui/material/FormControl';
-//  import Select from '@mui/material/Select';
-  {/* Interfaz SelectChangeEvent */}
- import Select, { SelectChangeEvent } from '@mui/material/Select';
-   {/* Hooks */ }
-//  import { useState } from 'react';
- import { useState, useRef } from 'react';
-    
- export default function ControlWeather() {
-    {/* Constante de referencia a un elemento HTML */ }
-     const descriptionRef = useRef<HTMLDivElement>(null);
-     {/* Variable de estado y función de actualización */}
-     let [selected, setSelected] = useState(-1)
-     {/* Arreglo de objetos */}
-     let items = [
-         {"name":"Precipitación", "description":"Cantidad de agua que cae sobre una superficie en un período específico."}, 
-         {"name": "Humedad", "description":"Cantidad de vapor de agua presente en el aire, generalmente expresada como un porcentaje."}, 
-         {"name":"Nubosidad", "description":"Grado de cobertura del cielo por nubes, afectando la visibilidad y la cantidad de luz solar recibida."}
-     ]
+interface ForecastData {
+  dt: number;
+  main: {
+    temp: number;
+    humidity: number;
+  };
+  wind: {
+    speed: number;
+  };
+}
 
-     {/* Arreglo de elementos JSX */}
-     let options = items.map( (item, key) => <MenuItem key={key} value={key}>{item["name"]}</MenuItem> )
-      {/* Manejador de eventos */}
-      const handleChange = (event: SelectChangeEvent) => {
-			
-        let idx = parseInt(event.target.value)
-        // alert( idx );
-        setSelected( idx );
+interface ControlWeatherProps {
+  forecastData: ForecastData[];
+}
 
-         {/* Modificación de la referencia descriptionRef */}
-         if (descriptionRef.current !== null) {
-            descriptionRef.current.innerHTML = (idx >= 0) ? items[idx]["description"] : ""
-        }
+const ControlWeather: React.FC<ControlWeatherProps> = ({ forecastData }) => {
+  const [selectedVariable, setSelectedVariable] = useState<string | null>("Temperatura");
 
-
+  // Calcular promedios por secciones del día
+  const calculateDailyAverages = (variable: "temp" | "humidity" | "wind") => {
+    const sections = {
+      "Morning ☀️": { sum: 0, count: 0 },
+      "Afternoon 🌤️": { sum: 0, count: 0 },
+      "Night 🌙": { sum: 0, count: 0 },
     };
-        
-     {/* JSX */}
-     return (
-         <Paper
-             sx={{
-                 p: 2,
-                 display: 'flex',
-                 flexDirection: 'column'
-             }}
-         >
 
-             <Typography mb={2} component="h3" variant="h6" color="primary">
-                 Variables Meteorológicas
-             </Typography>
+    forecastData.forEach((forecast) => {
+      const hour = new Date(forecast.dt * 1000).getHours();
+      let value = 0;
+      if (variable === "temp" || variable === "humidity") {
+        value = forecast.main[variable];
+      } else if (variable === "wind") {
+        value = forecast.wind.speed;
+      }
 
-             <Box sx={{ minWidth: 120 }}>
-                    
-                 <FormControl fullWidth>
-                     <InputLabel id="simple-select-label">Variables</InputLabel>
-                     <Select
-                         labelId="simple-select-label"
-                         id="simple-select"
-                         label="Variables"
-                         defaultValue='-1'
-                         onChange={handleChange}
-                     >
-                         <MenuItem key="-1" value="-1" disabled>Seleccione una variable</MenuItem>
+      if (hour >= 0 && hour < 12) {
+        sections["Morning ☀️"].sum += value;
+        sections["Morning ☀️"].count++;
+      } else if (hour >= 12 && hour < 18) {
+        sections["Afternoon 🌤️"].sum += value;
+        sections["Afternoon 🌤️"].count++;
+      } else {
+        sections["Night 🌙"].sum += value;
+        sections["Night 🌙"].count++;
+      }
+    });
 
-                         {options}
+    return Object.entries(sections).map(([section, data]) => ({
+      section,
+      average: data.count > 0 ? (data.sum / data.count).toFixed(2) : "N/A",
+    }));
+  };
 
-                     </Select>
-                 </FormControl>
+  const variableMap: Record<string, "temp" | "humidity" | "wind"> = {
+    Temperatura: "temp",
+    Humedad: "humidity",
+    Viento: "wind",
+  };
 
-             </Box>
-             {/* Use la variable de estado para renderizar del item seleccionado
-             <Typography mt={2} component="p" color="text.secondary">
-             {
-                 (selected >= 0)?items[selected]["description"]:""
-             }
-             </Typography> */}
-              <Typography ref={descriptionRef} mt={2} component="p" color="text.secondary" />
+  const averages =
+    selectedVariable && variableMap[selectedVariable]
+      ? calculateDailyAverages(variableMap[selectedVariable])
+      : [];
 
+  const handleVariableChange = (_event: React.MouseEvent<HTMLElement>, newVariable: string) => {
+    setSelectedVariable(newVariable);
+  };
 
-         </Paper>
+  return (
+    <Paper
+      sx={{
+        p: 3,
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: "#1e2a47", // Fondo oscuro
+        color: "white",
+        borderRadius: 2,
+        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)", // Sombra suave
+      }}
+    >
+      <Typography mb={2} component="h3" variant="h6" color="white" align="center">
+        Meteorological Variables
+      </Typography>
 
+      <ToggleButtonGroup
+        value={selectedVariable}
+        exclusive
+        onChange={handleVariableChange}
+        aria-label="weather variables"
+        sx={{
+          mb: 2,
+          backgroundColor: "#2a3d62", // Fondo más claro para el grupo de botones
+          borderRadius: 1,
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+          display: "flex",
+          justifyContent: "space-between", // Centra los botones
+          width: "100%", // Ocupa todo el espacio disponible
+        }}
+      >
+        <ToggleButton value="Temperatura" sx={{ color: "white", "&.Mui-selected": { backgroundColor: "#f9a61e", color: "white" }, flexGrow: 1, textAlign: "center" }}>
+          Temperature
+        </ToggleButton>
+        <ToggleButton value="Humedad" sx={{ color: "white", "&.Mui-selected": { backgroundColor: "#f9a61e", color: "white" } , flexGrow: 1, textAlign: "center" }}>
+          Humidity
+        </ToggleButton>
+        <ToggleButton value="Viento" sx={{ color: "white", "&.Mui-selected": { backgroundColor: "#f9a61e", color: "white" } , flexGrow: 1, textAlign: "center" }}>
+          Wind Speed
+        </ToggleButton>
+      </ToggleButtonGroup>
 
-     )
- }
+      {averages.length > 0 && (
+        <Grid container spacing={2} mt={2}>
+          <Grid item xs={12}>
+            {averages.map((average) => (
+              <Paper
+                sx={{
+                  p: 2,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  backgroundColor: "#2a3d62", // Fondo oscuro de la tarjeta
+                  color: "white",
+                  borderRadius: 2,
+                  boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)", // Sombra suave
+                  mb: 2, // Espaciado entre tarjetas
+                }}
+                key={average.section}
+              >
+                <Typography variant="body1" fontWeight="bold">
+                  {average.section}
+                </Typography>
+                <Typography variant="body1">
+                  {average.average}{" "}
+                  {selectedVariable === "Temperatura"
+                    ? "°C"
+                    : selectedVariable === "Viento"
+                    ? "m/s"
+                    : "%"}
+                </Typography>
+              </Paper>
+            ))}
+          </Grid>
+        </Grid>
+      )}
+    </Paper>
+  );
+};
+
+export default ControlWeather;

@@ -1,7 +1,12 @@
 export default interface Item {
-    dateStart: String;
-    dateEnd: String;
-    precipitation: String;
-    humidity: String;
-    clouds: String;
+    country: string;
+    dateStart: string;
+    dateEnd: string;
+    precipitation: string;
+    humidity: string;
+    clouds: string;
+    temperature: string;
+    thermalSensation: string;
+    windSpeed: string;
+    cloudsString: string;
 }
