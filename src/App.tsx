@@ -221,7 +221,6 @@ const App: React.FC = () => {
                 time={<Clock />}
                 date={formatDate(weatherData.current.time.toLocaleDateString())}
                 icon={weatherData.current.icon || ""}
-                dt = {forecastData.length > 0 ? forecastData[0].dt : 0}
               />
             )}
           </Box>

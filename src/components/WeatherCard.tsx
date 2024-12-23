@@ -13,7 +13,6 @@ interface WeatherCardProps {
   date: string;
   description: string; 
   icon: string; 
-  dt: number; 
 }
 
 const WeatherCard: React.FC<WeatherCardProps> = ({
@@ -26,12 +25,13 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
   date,
   description,
   icon,
-  dt, // Tiempo del pronóstico
 }) => {
-  // Determinar si es de día o de noche en base al `dt`
+  // Determinar si es de día o de noche 
   const isDaytime = () => {
-    const date = new Date(dt * 1000); 
-    const localHour = date.getHours(); 
+    const now = Math.floor(Date.now() / 1000); // Timestamp actual en segundos
+    const date = new Date(now * 1000); // Fecha desde el timestamp actual
+    const localHour = date.getHours(); // Hora local actual
+    console.log("Fecha actual:", date, "LocalHour:", localHour);
     return localHour >= 6 && localHour < 19; // Día entre 6 AM y 7 PM
   };
 
